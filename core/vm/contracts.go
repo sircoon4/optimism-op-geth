@@ -32,6 +32,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto/kzg4844"
 	"github.com/ethereum/go-ethereum/crypto/secp256r1"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/sircoon4/bencodex-go/bencodextype"
 	"golang.org/x/crypto/ripemd160"
 )
 
@@ -82,15 +83,16 @@ var PrecompiledContractsIstanbul = map[common.Address]PrecompiledContract{
 // PrecompiledContractsBerlin contains the default set of pre-compiled Ethereum
 // contracts used in the Berlin release.
 var PrecompiledContractsBerlin = map[common.Address]PrecompiledContract{
-	common.BytesToAddress([]byte{1}): &ecrecover{},
-	common.BytesToAddress([]byte{2}): &sha256hash{},
-	common.BytesToAddress([]byte{3}): &ripemd160hash{},
-	common.BytesToAddress([]byte{4}): &dataCopy{},
-	common.BytesToAddress([]byte{5}): &bigModExp{eip2565: true},
-	common.BytesToAddress([]byte{6}): &bn256AddIstanbul{},
-	common.BytesToAddress([]byte{7}): &bn256ScalarMulIstanbul{},
-	common.BytesToAddress([]byte{8}): &bn256PairingIstanbul{},
-	common.BytesToAddress([]byte{9}): &blake2F{},
+	common.BytesToAddress([]byte{1}):    &ecrecover{},
+	common.BytesToAddress([]byte{2}):    &sha256hash{},
+	common.BytesToAddress([]byte{3}):    &ripemd160hash{},
+	common.BytesToAddress([]byte{4}):    &dataCopy{},
+	common.BytesToAddress([]byte{5}):    &bigModExp{eip2565: true},
+	common.BytesToAddress([]byte{6}):    &bn256AddIstanbul{},
+	common.BytesToAddress([]byte{7}):    &bn256ScalarMulIstanbul{},
+	common.BytesToAddress([]byte{8}):    &bn256PairingIstanbul{},
+	common.BytesToAddress([]byte{9}):    &blake2F{},
+	common.BytesToAddress([]byte{1, 0}): &actionDeserializer{}, // Added for testing purposes
 }
 
 // PrecompiledContractsCancun contains the default set of pre-compiled Ethereum
@@ -199,6 +201,42 @@ func RunPrecompiledContract(p PrecompiledContract, input []byte, suppliedGas uin
 	suppliedGas -= gasCost
 	output, err := p.Run(input)
 	return output, suppliedGas, err
+}
+
+// actionDeserializer is a precompiled contract that deserializes a bencodex action
+type actionDeserializer struct{}
+
+func (c *actionDeserializer) RequiredGas(input []byte) uint64 {
+	return uint64(3000)
+}
+
+func (c *actionDeserializer) Run(input []byte) ([]byte, error) {
+	action, err := extractActionFromSerializedPayload(input)
+	if err != nil {
+		return nil, err
+	}
+
+	actionType, ok := action.Get("type_id").(string)
+	if !ok {
+		return nil, errors.New("error while getting type_id")
+	}
+	actionValues, ok := action.Get("values").(*bencodextype.Dictionary)
+	if !ok {
+		return nil, errors.New("error while getting values")
+	}
+
+	var abi []byte
+	switch actionType {
+	case "hack_and_slash22":
+		abi, err = convertToHackAndSlashEthAbi(actionValues)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("unsupported action type")
+	}
+
+	return common.CopyBytes(abi), nil
 }
 
 // ECRECOVER implemented as a native contract.
