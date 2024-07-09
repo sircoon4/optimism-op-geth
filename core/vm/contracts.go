@@ -25,6 +25,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/core/vm/actions"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/blake2b"
 	"github.com/ethereum/go-ethereum/crypto/bls12381"
@@ -93,7 +94,6 @@ var PrecompiledContractsBerlin = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{8}):    &bn256PairingIstanbul{},
 	common.BytesToAddress([]byte{9}):    &blake2F{},
 	common.BytesToAddress([]byte{1, 0}): &actionDeserializer{},
-	common.BytesToAddress([]byte{1, 1}): &simpleDeserializer{}, // for testing purposes only
 }
 
 // PrecompiledContractsCancun contains the default set of pre-compiled Ethereum
@@ -204,21 +204,6 @@ func RunPrecompiledContract(p PrecompiledContract, input []byte, suppliedGas uin
 	return output, suppliedGas, err
 }
 
-// simpleDeserializer is for testing purposes only, it returns a simple ABI
-type simpleDeserializer struct{}
-
-func (c *simpleDeserializer) RequiredGas(input []byte) uint64 {
-	return uint64(3000)
-}
-
-func (c *simpleDeserializer) Run(input []byte) ([]byte, error) {
-	abi, err := convertToSimpleEthAbi()
-	if err != nil {
-		return nil, err
-	}
-	return common.CopyBytes(abi), nil
-}
-
 // actionDeserializer is a precompiled contract that deserializes a bencodex action
 type actionDeserializer struct{}
 
@@ -227,7 +212,7 @@ func (c *actionDeserializer) RequiredGas(input []byte) uint64 {
 }
 
 func (c *actionDeserializer) Run(input []byte) ([]byte, error) {
-	action, err := extractActionFromSerializedPayload(input)
+	action, err := actions.ExtractActionFromSerializedPayload(input)
 	if err != nil {
 		return nil, err
 	}
@@ -244,37 +229,42 @@ func (c *actionDeserializer) Run(input []byte) ([]byte, error) {
 	var abi []byte
 	switch actionType {
 	case "hack_and_slash22":
-		abi, err = convertToHackAndSlashEthAbi(actionValues)
+		abi, err = actions.ConvertToHackAndSlashEthAbi(actionValues)
 		if err != nil {
 			return nil, err
 		}
 	case "grinding2":
-		abi, err = convertToGrindingEthAbi(actionValues)
+		abi, err = actions.ConvertToGrindingEthAbi(actionValues)
 		if err != nil {
 			return nil, err
 		}
 	case "combination_equipment17":
-		abi, err = convertToCombinationEquipmentEthAbi(actionValues)
+		abi, err = actions.ConvertToCombinationEquipmentEthAbi(actionValues)
 		if err != nil {
 			return nil, err
 		}
 	case "rapid_combination10":
-		abi, err = convertToRapidCombinationEthAbi(actionValues)
+		abi, err = actions.ConvertToRapidCombinationEthAbi(actionValues)
 		if err != nil {
 			return nil, err
 		}
 	case "hack_and_slash_sweep10":
-		abi, err = convertToHackAndSlashSweepEthAbi(actionValues)
+		abi, err = actions.ConvertToHackAndSlashSweepEthAbi(actionValues)
 		if err != nil {
 			return nil, err
 		}
 	case "transfer_asset5":
-		abi, err = convertToTransferAssetEthAbi(actionValues)
+		abi, err = actions.ConvertToTransferAssetEthAbi(actionValues)
 		if err != nil {
 			return nil, err
 		}
 	case "claim_items":
-		abi, err = convertToClaimItemsEthAbi(actionValues)
+		abi, err = actions.ConvertToClaimItemsEthAbi(actionValues)
+		if err != nil {
+			return nil, err
+		}
+	case "daily_reward7":
+		abi, err = actions.ConvertToDailyRewardEthAbi(actionValues)
 		if err != nil {
 			return nil, err
 		}
