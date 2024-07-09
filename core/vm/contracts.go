@@ -18,6 +18,7 @@ package vm
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -25,7 +26,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/core/vm/actions"
+	"github.com/ethereum/go-ethereum/core/vm/libplanet"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/blake2b"
 	"github.com/ethereum/go-ethereum/crypto/bls12381"
@@ -33,6 +34,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto/kzg4844"
 	"github.com/ethereum/go-ethereum/crypto/secp256r1"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/sircoon4/bencodex-go"
 	"github.com/sircoon4/bencodex-go/bencodextype"
 	"golang.org/x/crypto/ripemd160"
 )
@@ -94,6 +96,7 @@ var PrecompiledContractsBerlin = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{8}):    &bn256PairingIstanbul{},
 	common.BytesToAddress([]byte{9}):    &blake2F{},
 	common.BytesToAddress([]byte{1, 0}): &actionDeserializer{},
+	common.BytesToAddress([]byte{1, 1}): &libplanetTransactionDeserializer{},
 }
 
 // PrecompiledContractsCancun contains the default set of pre-compiled Ethereum
@@ -204,7 +207,7 @@ func RunPrecompiledContract(p PrecompiledContract, input []byte, suppliedGas uin
 	return output, suppliedGas, err
 }
 
-// actionDeserializer is a precompiled contract that deserializes a bencodex action
+// actionDeserializer is a precompiled contract that deserializes a libplanet action
 type actionDeserializer struct{}
 
 func (c *actionDeserializer) RequiredGas(input []byte) uint64 {
@@ -212,66 +215,38 @@ func (c *actionDeserializer) RequiredGas(input []byte) uint64 {
 }
 
 func (c *actionDeserializer) Run(input []byte) ([]byte, error) {
-	action, err := actions.ExtractActionFromSerializedPayload(input)
+	action, err := libplanet.ExtractActionDictFromSerializedPayload(input)
 	if err != nil {
 		return nil, err
 	}
 
-	actionType, ok := action.Get("type_id").(string)
-	if !ok {
-		return nil, errors.New("error while getting type_id")
-	}
-	actionValues, ok := action.Get("values").(*bencodextype.Dictionary)
-	if !ok {
-		return nil, errors.New("error while getting values")
-	}
+	return libplanet.ExtractActionEthAbi(action)
+}
 
-	var abi []byte
-	switch actionType {
-	case "hack_and_slash22":
-		abi, err = actions.ConvertToHackAndSlashEthAbi(actionValues)
-		if err != nil {
-			return nil, err
-		}
-	case "grinding2":
-		abi, err = actions.ConvertToGrindingEthAbi(actionValues)
-		if err != nil {
-			return nil, err
-		}
-	case "combination_equipment17":
-		abi, err = actions.ConvertToCombinationEquipmentEthAbi(actionValues)
-		if err != nil {
-			return nil, err
-		}
-	case "rapid_combination10":
-		abi, err = actions.ConvertToRapidCombinationEthAbi(actionValues)
-		if err != nil {
-			return nil, err
-		}
-	case "hack_and_slash_sweep10":
-		abi, err = actions.ConvertToHackAndSlashSweepEthAbi(actionValues)
-		if err != nil {
-			return nil, err
-		}
-	case "transfer_asset5":
-		abi, err = actions.ConvertToTransferAssetEthAbi(actionValues)
-		if err != nil {
-			return nil, err
-		}
-	case "claim_items":
-		abi, err = actions.ConvertToClaimItemsEthAbi(actionValues)
-		if err != nil {
-			return nil, err
-		}
-	case "daily_reward7":
-		abi, err = actions.ConvertToDailyRewardEthAbi(actionValues)
-		if err != nil {
-			return nil, err
-		}
-	default:
-		return nil, errors.New("unsupported action type")
-	}
+// libplanetTransactionDeserializer is a precompiled contract that deserializes a libplanet transaction
+type libplanetTransactionDeserializer struct{}
 
+func (c *libplanetTransactionDeserializer) RequiredGas(input []byte) uint64 {
+	return uint64(3000)
+}
+
+func (c *libplanetTransactionDeserializer) Run(input []byte) ([]byte, error) {
+	bencodedTransaction, err := base64.StdEncoding.DecodeString(string(input))
+	if err != nil {
+		return nil, err
+	}
+	decodedTransaction, err := bencodex.Decode(bencodedTransaction)
+	if err != nil {
+		return nil, err
+	}
+	transactionDict, ok := decodedTransaction.(*bencodextype.Dictionary)
+	if !ok {
+		return nil, fmt.Errorf("invalid transaction format")
+	}
+	abi, err := libplanet.ConvertToTransactionEthAbi(transactionDict)
+	if err != nil {
+		return nil, err
+	}
 	return common.CopyBytes(abi), nil
 }
 

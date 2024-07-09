@@ -1,4 +1,4 @@
-package actions
+package libplanet
 
 import (
 	"strconv"
@@ -13,7 +13,7 @@ type HackAndSlash struct {
 	Costumes       [][16]byte     `abi:"costumes"`
 	Equipments     [][16]byte     `abi:"equipments"`
 	Foods          [][16]byte     `abi:"foods"`
-	R              [][]int64      `abi:"r"`
+	R              []RuneSlotInfo `abi:"r"`
 	WorldId        int64          `abi:"worldId"`
 	StageId        int64          `abi:"stageId"`
 	StageBuffId    int64          `abi:"stageBuffId"`
@@ -22,13 +22,16 @@ type HackAndSlash struct {
 	ApStoneCount   int64          `abi:"apStoneCount"`
 }
 
-func ConvertToHackAndSlashEthAbi(actionValues *bencodextype.Dictionary) ([]byte, error) {
+func convertToHackAndSlashEthAbi(actionValues *bencodextype.Dictionary) ([]byte, error) {
 	var TupleHackAndSlash, _ = abi.NewType("tuple", "struct HackAndSlash", []abi.ArgumentMarshaling{
-		{Name: "id", Type: "uint8[16]"},
-		{Name: "costumes", Type: "uint8[16][]"},
-		{Name: "equipments", Type: "uint8[16][]"},
-		{Name: "foods", Type: "uint8[16][]"},
-		{Name: "r", Type: "int64[][]"},
+		{Name: "id", Type: "bytes16"},
+		{Name: "costumes", Type: "bytes16[]"},
+		{Name: "equipments", Type: "bytes16[]"},
+		{Name: "foods", Type: "bytes16[]"},
+		{Name: "r", Type: "tuple[]", Components: []abi.ArgumentMarshaling{
+			{Name: "slotIndex", Type: "int64"},
+			{Name: "runeId", Type: "int64"},
+		}},
 		{Name: "worldId", Type: "int64"},
 		{Name: "stageId", Type: "int64"},
 		{Name: "stageBuffId", Type: "int64"},
@@ -57,14 +60,9 @@ func ConvertToHackAndSlashEthAbi(actionValues *bencodextype.Dictionary) ([]byte,
 		foodValue, _ := food.([]byte)
 		foodsList = append(foodsList, [16]byte(foodValue))
 	}
-	rList := [][]int64{}
+	rList := []RuneSlotInfo{}
 	for _, rInfo := range actionValues.Get("r").([]any) {
-		rInfoList := []int64{}
-		for _, r := range rInfo.([]any) {
-			rValue, _ := strconv.Atoi(r.(string))
-			rInfoList = append(rInfoList, int64(rValue))
-		}
-		rList = append(rList, rInfoList)
+		rList = append(rList, extractRuneSlotInfo(rInfo.([]any)))
 	}
 	worldIdValue, _ := strconv.Atoi(actionValues.Get("worldId").(string))
 	stageIdValue, _ := strconv.Atoi(actionValues.Get("stageId").(string))

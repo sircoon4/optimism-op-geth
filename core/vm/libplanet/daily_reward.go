@@ -1,4 +1,4 @@
-package actions
+package libplanet
 
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -11,9 +11,9 @@ type DailyReward struct {
 	A  common.Address `abi:"a"`
 }
 
-func ConvertToDailyRewardEthAbi(actionValues *bencodextype.Dictionary) ([]byte, error) {
+func convertToDailyRewardEthAbi(actionValues *bencodextype.Dictionary) ([]byte, error) {
 	var TupleDailyReward, _ = abi.NewType("tuple", "struct DailyReward", []abi.ArgumentMarshaling{
-		{Name: "id", Type: "uint8[16]"},
+		{Name: "id", Type: "bytes16"},
 		{Name: "a", Type: "address"},
 	})
 

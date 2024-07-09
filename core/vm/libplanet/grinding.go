@@ -1,4 +1,4 @@
-package actions
+package libplanet
 
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -13,11 +13,11 @@ type Grinding struct {
 	C  bool           `abi:"c"`
 }
 
-func ConvertToGrindingEthAbi(actionValues *bencodextype.Dictionary) ([]byte, error) {
+func convertToGrindingEthAbi(actionValues *bencodextype.Dictionary) ([]byte, error) {
 	var TupleGrinding, _ = abi.NewType("tuple", "struct Grinding", []abi.ArgumentMarshaling{
-		{Name: "id", Type: "uint8[16]"},
+		{Name: "id", Type: "bytes16"},
 		{Name: "a", Type: "address"},
-		{Name: "e", Type: "uint8[16][]"},
+		{Name: "e", Type: "bytes16[]"},
 		{Name: "c", Type: "bool"},
 	})
 

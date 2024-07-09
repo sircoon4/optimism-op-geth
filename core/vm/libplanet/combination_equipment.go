@@ -1,4 +1,4 @@
-package actions
+package libplanet
 
 import (
 	"strconv"
@@ -19,9 +19,9 @@ type CombinationEquipment struct {
 	Pid int64          `abi:"pid"`
 }
 
-func ConvertToCombinationEquipmentEthAbi(actionValues *bencodextype.Dictionary) ([]byte, error) {
+func convertToCombinationEquipmentEthAbi(actionValues *bencodextype.Dictionary) ([]byte, error) {
 	var TupleCombinationEquipment, _ = abi.NewType("tuple", "struct CombinationEquipment", []abi.ArgumentMarshaling{
-		{Name: "id", Type: "uint8[16]"},
+		{Name: "id", Type: "bytes16"},
 		{Name: "a", Type: "address"},
 		{Name: "s", Type: "int64"},
 		{Name: "r", Type: "int64"},

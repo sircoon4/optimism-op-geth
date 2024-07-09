@@ -1,4 +1,4 @@
-package actions
+package libplanet
 
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -17,9 +17,9 @@ type ClaimData struct {
 	FungibleAssetValues []FungibleAssetValue `abi:"fungibleAssetValues"`
 }
 
-func ConvertToClaimItemsEthAbi(actionValues *bencodextype.Dictionary) ([]byte, error) {
+func convertToClaimItemsEthAbi(actionValues *bencodextype.Dictionary) ([]byte, error) {
 	var TupleClaimItems, _ = abi.NewType("tuple", "struct ClaimItems", []abi.ArgumentMarshaling{
-		{Name: "id", Type: "uint8[16]"},
+		{Name: "id", Type: "bytes16"},
 		{Name: "cd", Type: "tuple[]", Components: []abi.ArgumentMarshaling{
 			{Name: "avatarAddress", Type: "address"},
 			{Name: "fungibleAssetValues", Type: "tuple[]", Components: []abi.ArgumentMarshaling{

@@ -1,4 +1,4 @@
-package actions
+package libplanet
 
 import (
 	"strconv"
@@ -12,7 +12,7 @@ type HackAndSlashSweep struct {
 	Id            [16]byte       `abi:"id"`
 	Costumes      [][16]byte     `abi:"costumes"`
 	Equipments    [][16]byte     `abi:"equipments"`
-	RuneInfos     [][]int64      `abi:"runeInfos"`
+	RuneInfos     []RuneSlotInfo `abi:"runeInfos"`
 	AvatarAddress common.Address `abi:"avatarAddress"`
 	ApStoneCount  int64          `abi:"apStoneCount"`
 	ActionPoint   int64          `abi:"actionPoint"`
@@ -20,12 +20,15 @@ type HackAndSlashSweep struct {
 	StageId       int64          `abi:"stageId"`
 }
 
-func ConvertToHackAndSlashSweepEthAbi(actionValues *bencodextype.Dictionary) ([]byte, error) {
+func convertToHackAndSlashSweepEthAbi(actionValues *bencodextype.Dictionary) ([]byte, error) {
 	var TupleHackAndSlashSweep, _ = abi.NewType("tuple", "struct HackAndSlashSweep", []abi.ArgumentMarshaling{
-		{Name: "id", Type: "uint8[16]"},
-		{Name: "costumes", Type: "uint8[16][]"},
-		{Name: "equipments", Type: "uint8[16][]"},
-		{Name: "runeInfos", Type: "int64[][]"},
+		{Name: "id", Type: "bytes16"},
+		{Name: "costumes", Type: "bytes16[]"},
+		{Name: "equipments", Type: "bytes16[]"},
+		{Name: "runeInfos", Type: "tuple[]", Components: []abi.ArgumentMarshaling{
+			{Name: "slotIndex", Type: "int64"},
+			{Name: "runeId", Type: "int64"},
+		}},
 		{Name: "avatarAddress", Type: "address"},
 		{Name: "apStoneCount", Type: "int64"},
 		{Name: "actionPoint", Type: "int64"},
@@ -48,14 +51,9 @@ func ConvertToHackAndSlashSweepEthAbi(actionValues *bencodextype.Dictionary) ([]
 		equipmentValue, _ := equipment.([]byte)
 		equipmentsList = append(equipmentsList, [16]byte(equipmentValue))
 	}
-	runeInfosList := [][]int64{}
+	runeInfosList := []RuneSlotInfo{}
 	for _, runeInfo := range actionValues.Get("runeInfos").([]any) {
-		runeInfoList := []int64{}
-		for _, rune := range runeInfo.([]any) {
-			runeValue, _ := strconv.Atoi(rune.(string))
-			runeInfoList = append(runeInfoList, int64(runeValue))
-		}
-		runeInfosList = append(runeInfosList, runeInfoList)
+		runeInfosList = append(runeInfosList, extractRuneSlotInfo(runeInfo.([]any)))
 	}
 	avatarAddressValue := common.BytesToAddress(actionValues.Get("avatarAddress").([]byte))
 	apStoneCountValue, _ := strconv.Atoi(actionValues.Get("apStoneCount").(string))

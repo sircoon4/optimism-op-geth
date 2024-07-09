@@ -1,4 +1,4 @@
-package actions
+package libplanet
 
 import (
 	"strconv"
@@ -14,9 +14,9 @@ type RapidCombination struct {
 	SlotIndex     int64          `abi:"slotIndex"`
 }
 
-func ConvertToRapidCombinationEthAbi(actionValues *bencodextype.Dictionary) ([]byte, error) {
+func convertToRapidCombinationEthAbi(actionValues *bencodextype.Dictionary) ([]byte, error) {
 	var TupleRapidCombination, _ = abi.NewType("tuple", "struct RapidCombination", []abi.ArgumentMarshaling{
-		{Name: "id", Type: "uint8[16]"},
+		{Name: "id", Type: "bytes16"},
 		{Name: "avatarAddress", Type: "address"},
 		{Name: "slotIndex", Type: "int64"},
 	})

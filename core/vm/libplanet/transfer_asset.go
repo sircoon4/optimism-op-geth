@@ -1,4 +1,4 @@
-package actions
+package libplanet
 
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -13,7 +13,7 @@ type TransferAsset struct {
 	Memo      string             `abi:"memo"`
 }
 
-func ConvertToTransferAssetEthAbi(actionValues *bencodextype.Dictionary) ([]byte, error) {
+func convertToTransferAssetEthAbi(actionValues *bencodextype.Dictionary) ([]byte, error) {
 	var TupleTransferAsset, _ = abi.NewType("tuple", "struct TransferAsset", []abi.ArgumentMarshaling{
 		{Name: "sender", Type: "address"},
 		{Name: "recipient", Type: "address"},
