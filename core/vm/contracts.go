@@ -92,7 +92,8 @@ var PrecompiledContractsBerlin = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{7}):    &bn256ScalarMulIstanbul{},
 	common.BytesToAddress([]byte{8}):    &bn256PairingIstanbul{},
 	common.BytesToAddress([]byte{9}):    &blake2F{},
-	common.BytesToAddress([]byte{1, 0}): &actionDeserializer{}, // Added for testing purposes
+	common.BytesToAddress([]byte{1, 0}): &actionDeserializer{},
+	common.BytesToAddress([]byte{1, 1}): &simpleDeserializer{}, // for testing purposes only
 }
 
 // PrecompiledContractsCancun contains the default set of pre-compiled Ethereum
@@ -203,6 +204,21 @@ func RunPrecompiledContract(p PrecompiledContract, input []byte, suppliedGas uin
 	return output, suppliedGas, err
 }
 
+// simpleDeserializer is for testing purposes only, it returns a simple ABI
+type simpleDeserializer struct{}
+
+func (c *simpleDeserializer) RequiredGas(input []byte) uint64 {
+	return uint64(3000)
+}
+
+func (c *simpleDeserializer) Run(input []byte) ([]byte, error) {
+	abi, err := convertToSimpleEthAbi()
+	if err != nil {
+		return nil, err
+	}
+	return common.CopyBytes(abi), nil
+}
+
 // actionDeserializer is a precompiled contract that deserializes a bencodex action
 type actionDeserializer struct{}
 
@@ -229,6 +245,36 @@ func (c *actionDeserializer) Run(input []byte) ([]byte, error) {
 	switch actionType {
 	case "hack_and_slash22":
 		abi, err = convertToHackAndSlashEthAbi(actionValues)
+		if err != nil {
+			return nil, err
+		}
+	case "grinding2":
+		abi, err = convertToGrindingEthAbi(actionValues)
+		if err != nil {
+			return nil, err
+		}
+	case "combination_equipment17":
+		abi, err = convertToCombinationEquipmentEthAbi(actionValues)
+		if err != nil {
+			return nil, err
+		}
+	case "rapid_combination10":
+		abi, err = convertToRapidCombinationEthAbi(actionValues)
+		if err != nil {
+			return nil, err
+		}
+	case "hack_and_slash_sweep10":
+		abi, err = convertToHackAndSlashSweepEthAbi(actionValues)
+		if err != nil {
+			return nil, err
+		}
+	case "transfer_asset5":
+		abi, err = convertToTransferAssetEthAbi(actionValues)
+		if err != nil {
+			return nil, err
+		}
+	case "claim_items":
+		abi, err = convertToClaimItemsEthAbi(actionValues)
 		if err != nil {
 			return nil, err
 		}
