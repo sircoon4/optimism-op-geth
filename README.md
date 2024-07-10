@@ -29,7 +29,7 @@ Writing a genesis block to blockchain data
 ./geth --datadir ./blockchainData init ./genesis.json
 ```
 
-`genesis.json` file looks like this. You have to change `extradata` and `alloc` property depending on the account you made. And you can change `balance` of `alloc` arbitrary. In this config, we use `clique` for setting up as a PoA network. See https://geth.ethereum.org/docs/fundamentals/private-network#clique-example for more informations.
+`genesis.json` file looks like this. You have to change `extradata` and `alloc` property depending on the account you made. And you can change `balance` of `alloc` arbitrarily. In this config, we use `clique` for setting up as a PoA network. See https://geth.ethereum.org/docs/fundamentals/private-network#clique-example for more informations.
 
 ```shell
 {
