@@ -1,6 +1,7 @@
 ## Go Ethereum For Libplanet Rollup
 
-Forked from [ethereum-optimism/op-geth](https://github.com/ethereum-optimism/op-geth)
+Forked from [ethereum-optimism/op-geth](https://github.com/ethereum-optimism/op-geth) </br>
+but detached for some reason
 
 
 ## Operating a private network
