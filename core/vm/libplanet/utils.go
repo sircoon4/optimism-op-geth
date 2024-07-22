@@ -75,7 +75,10 @@ func ExtractActionEthAbi(action *bencodextype.Dictionary) ([]byte, error) {
 			return nil, err
 		}
 	default:
-		return nil, fmt.Errorf("unsupported_%s", actionType)
+		abi, err = bencodex.Encode(actionValues)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return common.CopyBytes(abi), nil
